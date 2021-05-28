@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: frontend-configmap
+    namespace: heihkd
+data:
+  DAI_CONTRACT_ADDRESS: ""
+  HEIHKD_CONTRACT_ADDRESS: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: frontend
+    namespace: heihkd
+spec:
+    selector:
+        matchLabels:
+            app: frontend
+    replicas: 2
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+        maxSurge: 1
+    template:
+        metadata:
+            labels:
+                app: frontend
+        spec:
+            containers:
+                - name: app
+                  image: mokkahei24/heihkd-frontend:latest
+                  imagePullPolicy: Always
+                  ports:
+                      - containerPort: 3000
+                  envFrom:
+                      - configMapRef:
+                            name: frontend-configmap
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: frontend
+    namespace: heihkd
+spec:
+    selector:
+        app: frontend
+    ports:
+        - protocol: TCP
+          port: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    name: frontend-ingress
+    namespace: heihkd
+    annotations:
+        nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+        # nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
+        nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+        cert-manager.io/cluster-issuer: letsencrypt
+spec:
+    rules:
+        - host: www.heihkd.com
+          http:
+              paths:
+                  - path: /
+                    pathType: Prefix
+                    backend:
+                        service:
+                          name: frontend
+                          port:
+                            number: 3000
+    tls:
+        - secretName: www-heihkd-com-tls
+          hosts:
+              - www.heihkd.com
+              - heihkd.com

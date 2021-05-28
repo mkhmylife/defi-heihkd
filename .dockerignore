@@ -1,0 +1,12 @@
+.git
+.github
+.nuxt
+node_modules
+src/node_modules
+.env
+contracts
+migrations
+test
+*.sh
+truffle-config.js
+.secret
