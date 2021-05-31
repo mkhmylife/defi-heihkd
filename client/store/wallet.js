@@ -1,4 +1,4 @@
-import { formatEther, getProvider } from '~/utils/ether'
+import { formatEther } from '~/utils/ether'
 
 export const state = () => ({
   account: null,

@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 
 import "./bep20/BEP20.sol";
 
-contract HeiHKDToken is Context, IBEP20, Ownable {
+contract HeihkdToken is Context, IBEP20, Ownable {
 
     using SafeMath for uint256;
 
@@ -13,47 +13,49 @@ contract HeiHKDToken is Context, IBEP20, Ownable {
     uint8 private _decimals;
     string private _symbol;
     string private _name;
-    address _daiAddress;
 
-    uint256 private _exchangeRateFromDaiToHeihkd = 7595;
-    uint256 private _exchangeRateFromHeihkdToDai = 7905;
+    uint256 private _buyRate;
+    uint256 private _sellRate;
+    IBEP20 private _daiToken;
 
-    constructor(address DaiAddress) public {
-        _daiAddress = DaiAddress;
+    constructor(address daiAddress) public {
         _name = "Hei HKD";
         _symbol = "HEIHKD";
         _decimals = 18;
         _totalSupply = 0;
         _balances[msg.sender] = _totalSupply;
-
+        _buyRate = 775;        // 1 Dai can buy 7.75 Heihkd
+        _sellRate = 780;       // 7.8 Heihkd can buy 1 Dai
+        _daiToken = IBEP20(daiAddress);
         emit Transfer(address(this), msg.sender, _totalSupply);
     }
 
     /**
+     * @dev Emitted when the a swapper swap Dai with Heihkd
+     */
+    event Swap(address indexed swapper, uint256 amount, string from, string to);
+
+    /**
      * @dev Creates `amount` tokens and assigns them to `msg.sender`, increasing
-     * the total supply.
+     * the total supply if and only if the contract has enough Dai to support the
+     * exchange rate
      *
      * Requirements
      *
      * - `msg.sender` must be the token owner
      */
-    function mint(uint256 amount) public onlyOwner returns (bool) {
-        IBEP20 daiToken = IBEP20(_daiAddress);
-        uint256 ownerDaiBalance = daiToken.balanceOf(address(this));
-        require(ownerDaiBalance >= (amount.add(_totalSupply)), "HEIHKD: Owner doesn't have enough DAI to mint HEIHKD");
+    function mint(uint256 amount) external onlyOwner returns (bool) {
         _mint(address(this), amount);
         return true;
     }
 
     /**
-     * @dev Get owner DAI balance
+     * @dev Get Dai balance of this address
      * sender will transfer DAI to this contract
      * owner will transfer HeiHKD to sender
      */
-    function daiBalance() public returns (uint256) {
-        IBEP20 daiToken = IBEP20(_daiAddress);
-        uint256 ownerDaiBalance = daiToken.balanceOf(address(this));
-        return ownerDaiBalance;
+    function daiBalance() external returns (uint256) {
+        return _daiBalance();
     }
 
     /**
@@ -61,14 +63,16 @@ contract HeiHKDToken is Context, IBEP20, Ownable {
      * sender will transfer DAI to this contract
      * owner will transfer HeiHKD to sender
      */
-    function swapDaiForHeihkd(uint256 amountDai) public {
-        IBEP20 daiToken = IBEP20(_daiAddress);
-        uint256 amountHeihkd = amountDai.mul(_exchangeRateFromDaiToHeihkd).div(1000);
+    function swapDaiForHeihkd(uint256 amountDai) external returns (bool) {
+        uint256 amountHeihkd = amountDai.mul(_buyRate).div(100);
         uint256 contractHeihkdBalance = _balances[address(this)];
         require(contractHeihkdBalance >= amountHeihkd, "HEIHKD: Contract doesn't have enough HEIHKI to swap for DAI");
 
-        daiToken.transferFrom(_msgSender(), address(this), amountDai);
+        _daiToken.transferFrom(_msgSender(), address(this), amountDai);
         _transfer(address(this), _msgSender(), amountHeihkd);
+
+        emit Swap(_msgSender(), amountDai, 'dai', 'heihkd');
+        return true;
     }
 
     /**
@@ -76,44 +80,43 @@ contract HeiHKDToken is Context, IBEP20, Ownable {
      * sender will transfer DAI to this contract
      * owner will transfer HeiHKD to sender
      */
-    function swapHeihkdForDai(uint256 amountHeihkd) public {
-        IBEP20 daiToken = IBEP20(_daiAddress);
-        uint256 amountDai = amountHeihkd.mul(1000).div(_exchangeRateFromHeihkdToDai);
+    function swapHeihkdForDai(uint256 amountHeihkd) external returns (bool)  {
+        uint256 amountDai = amountHeihkd.mul(100).div(_sellRate);
 
-        uint256 contractDaiBalance = daiBalance();
+        uint256 contractDaiBalance = _daiBalance();
         require(contractDaiBalance >= amountDai, "HEIHKD: Owner doesn't have enough DAI to swap for HEIHKD");
 
         _transfer(_msgSender(), address(this), amountHeihkd);
-        daiToken.approve(address(this), amountDai);
-        daiToken.transferFrom(address(this), _msgSender(), amountDai);
+        _daiToken.approve(address(this), amountDai);
+        _daiToken.transferFrom(address(this), _msgSender(), amountDai);
+
+        emit Swap(_msgSender(), amountHeihkd, 'heihkd', 'dai');
+        return true;
     }
 
     /**
      * @dev Transfer DAI from contract account to owner
      */
-    function transferDaiToOwner(uint256 _amount) public onlyOwner returns (bool) {
-        uint256 daiBalance = daiBalance();
-        uint256 minimumDaiAmount = _totalSupply.mul(_exchangeRateFromHeihkdToDai);
-        require(daiBalance.add(_amount) < minimumDaiAmount , "HEIHKD: Contract will not have enough DAI to maintain the exchange rate");
+    function transferDaiToOwner(uint256 _amount) external onlyOwner returns (bool) {
+        require(_daiBalance().sub(_amount) >= _totalSupply.div(_sellRate) , "HEIHKD: Contract will not have enough DAI to maintain the exchange rate");
 
-        IBEP20 daiToken = IBEP20(_daiAddress);
-        daiToken.approve(address(this), _amount);
-        daiToken.transferFrom(address(this), owner(), _amount);
+        _daiToken.approve(address(this), _amount);
+        _daiToken.transferFrom(address(this), owner(), _amount);
         return true;
     }
 
     /**
      * @dev Returns the exchange rate from dai to heihkd
      */
-    function getExchangeRateFromDaiToHeihkd() external view returns (uint256) {
-        return _exchangeRateFromDaiToHeihkd;
+    function getBuyRate() external view returns (uint256) {
+        return _buyRate;
     }
 
     /**
      * @dev Returns the exchange rate from heihkd to dai
      */
-    function getExchangeRateFromHeihkdToDai() external view returns (uint256) {
-        return _exchangeRateFromHeihkdToDai;
+    function getSellRate() external view returns (uint256) {
+        return _sellRate;
     }
 
     /**
@@ -276,12 +279,14 @@ contract HeiHKDToken is Context, IBEP20, Ownable {
      *
      * - `to` cannot be the zero address.
      */
-    function _mint(address account, uint256 amount) internal {
+    function _mint(address account, uint256 amountHeihkd) internal {
         require(account != address(0), "HEIHKD: mint to the zero address");
+        uint256 amountDaiNeeded = amountHeihkd.div(_sellRate).mul(100).add(_totalSupply);
+        require(_daiBalance() >= amountDaiNeeded, "HEIHKD: Contract doesn't have enough DAI to mint HEIHKD and maintain exchange rate");
 
-        _totalSupply = _totalSupply.add(amount);
-        _balances[account] = _balances[account].add(amount);
-        emit Transfer(address(0), account, amount);
+        _totalSupply = _totalSupply.add(amountHeihkd);
+        _balances[account] = _balances[account].add(amountHeihkd);
+        emit Transfer(address(0), account, amountHeihkd);
     }
 
     /**
@@ -333,5 +338,14 @@ contract HeiHKDToken is Context, IBEP20, Ownable {
     function _burnFrom(address account, uint256 amount) internal {
         _burn(account, amount);
         _approve(account, _msgSender(), _allowances[account][_msgSender()].sub(amount, "HEIHKD: burn amount exceeds allowance"));
+    }
+
+    /**
+     * @dev Get Dai balance of this address
+     * sender will transfer DAI to this contract
+     * owner will transfer HeiHKD to sender
+     */
+    function _daiBalance() internal view returns (uint256) {
+        return _daiToken.balanceOf(address(this));
     }
 }

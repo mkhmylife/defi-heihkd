@@ -1,5 +1,5 @@
+import HeiHKDToken from '../../build/contracts/HeihkdToken.json'
 import { ethers } from 'ethers'
-import HeiHKDToken from '../../build/contracts/HeiHKDToken.json'
 import { formatEther, getProvider } from '~/utils/ether'
 
 export const state = () => ({

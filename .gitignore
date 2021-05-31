@@ -1,6 +1,10 @@
 node_modules
 /.idea/
 /.secret
-src/node_modules
-src/.nuxt
-src/.env
+build
+cache
+.DS_Store
+.nuxt
+.env
+
+

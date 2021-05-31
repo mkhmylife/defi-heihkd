@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 
 import "./bep20/BEP20.sol";
 
-contract DAIToken is Context, IBEP20, Ownable {
+contract DaiToken is Context, IBEP20, Ownable {
 
     using SafeMath for uint256;
 
@@ -15,11 +15,11 @@ contract DAIToken is Context, IBEP20, Ownable {
     string private _symbol;
     string private _name;
 
-    constructor() public {
+    constructor(uint256 _supply) public {
         _name = "DAI";
         _symbol = "DAI";
         _decimals = 18;
-        _totalSupply = 100000000000000000000000;
+        _totalSupply = _supply;
         _balances[msg.sender] = _totalSupply;
 
         emit Transfer(address(0), msg.sender, _totalSupply);

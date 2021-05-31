@@ -1,5 +1,5 @@
+import DAIToken from '../../build/contracts/DaiToken.json'
 import { ethers } from 'ethers'
-import DAIToken from '../../build/contracts/DAIToken.json'
 import { getProvider } from '~/utils/ether'
 
 export const state = () => ({
@@ -23,7 +23,6 @@ export const actions = {
     commit('setContract', contract)
 
     provider.on({ address: process.env.daiContractAddress }, async (e) => {
-      console.log(e)
       await dispatch('wallet/getBalances', null, { root: true })
       await dispatch('wallet/getAllowance', null, { root: true })
     })

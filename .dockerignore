@@ -10,3 +10,11 @@ test
 *.sh
 truffle-config.js
 .secret
+/.idea/
+/.secret
+build
+cache
+.DS_Store
+.nuxt
+.env
+
