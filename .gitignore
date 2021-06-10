@@ -1,10 +1,9 @@
 node_modules
 /.idea/
-/.secret
+/.secret.test
+/.secret.main
 build
 cache
 .DS_Store
 .nuxt
 .env
-
-

@@ -62,11 +62,11 @@ export const actions = {
   async getAllowance({ commit, state, rootState }) {
     const daiAllowance = await rootState.daiToken.contract.allowance(
       state.account,
-      process.env.heihkdContractAddress
+      this.$config.heihkdContractAddress
     )
     const heihkdAllowance = await rootState.heihkdToken.contract.allowance(
       state.account,
-      process.env.heihkdContractAddress
+      this.$config.heihkdContractAddress
     )
     commit('setDaiAllowance', daiAllowance)
     commit('setHeihkdAllowance', heihkdAllowance)

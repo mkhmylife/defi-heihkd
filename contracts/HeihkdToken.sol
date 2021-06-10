@@ -54,7 +54,7 @@ contract HeihkdToken is Context, IBEP20, Ownable {
      * sender will transfer DAI to this contract
      * owner will transfer HeiHKD to sender
      */
-    function daiBalance() external returns (uint256) {
+    function daiBalance() external view returns (uint256) {
         return _daiBalance();
     }
 
@@ -123,7 +123,7 @@ contract HeihkdToken is Context, IBEP20, Ownable {
      * @dev Returns the bep token owner.
      */
     function getOwner() external view returns (address) {
-        return owner();
+      return owner();
     }
 
     /**

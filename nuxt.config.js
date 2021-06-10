@@ -19,11 +19,6 @@ export default {
 		link: [{ rel: 'icon', type: 'image/png', href: '/favicon.png' }],
 	},
 
-	env: {
-		daiContractAddress: process.env.DAI_CONTRACT_ADDRESS,
-		heihkdContractAddress: process.env.HEIHKD_CONTRACT_ADDRESS,
-	},
-
 	// Global CSS: https://go.nuxtjs.dev/config-css
 	css: [],
 
@@ -52,4 +47,10 @@ export default {
 
 	// Build Configuration: https://go.nuxtjs.dev/config-build
 	build: {},
+
+	publicRuntimeConfig: {
+		daiContractAddress: process.env.DAI_CONTRACT_ADDRESS,
+		heihkdContractAddress: process.env.HEIHKD_CONTRACT_ADDRESS,
+	},
+	privateRuntimeConfig: {},
 }

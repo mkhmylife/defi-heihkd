@@ -32,7 +32,6 @@ export const actions = {
     await dispatch('daiToken/getContract')
     await dispatch('heihkdToken/getContract')
     await dispatch('wallet/getAccount')
-
     commit('setConnected', true)
   },
 }

@@ -1,7 +1,8 @@
 <template>
   <b-navbar toggleable="lg" type="dark" variant="dark">
-    <b-navbar-brand href="#"
-      ><img src="/favicon.png" width="30" /> HeiHKD Token Swap</b-navbar-brand
+    <b-navbar-brand to="/"
+      ><img src="~assets/logo.svg" width="30" class='mr-1' /> HEIHKD Token
+      Swap</b-navbar-brand
     >
 
     <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>

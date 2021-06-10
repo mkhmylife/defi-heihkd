@@ -3,10 +3,15 @@
     <h3 class="mb-3">Token Swap</h3>
     <b-card class="mb-4">
       <b-form>
-        <div class="mb-3">
-          Rate: 1 DAI = {{ exchangeRateFromDaiToHeihkd }} HEIHKD
-        </div>
-        <div class="d-block d-sm-flex justify-content-between align-items-center mb-4">
+        <div class="mb-3">Rate: 1 DAI = {{ buyRate }} HEIHKD</div>
+        <div
+          class="
+            d-block d-sm-flex
+            justify-content-between
+            align-items-center
+            mb-4
+          "
+        >
           <b-form-group class="w-100 mb-0">
             <b-input-group append="DAI">
               <b-form-input
@@ -30,6 +35,7 @@
         <div class="text-center">
           <b-button
             v-if="!needsToApproveFromDaiToHeihkd"
+            :disabled="!canSwapFromDaiToHeihkd"
             variant="dark"
             block
             @click="swap('toHeihkd')"
@@ -43,10 +49,15 @@
     </b-card>
     <b-card>
       <b-form>
-        <div class="mb-3">
-          Rate: 1 HEIHKD = {{ exchangeRateFromHeihkdToDai }} DAI
-        </div>
-        <div class="d-block d-sm-flex justify-content-between align-items-center mb-4">
+        <div class="mb-3">Rate: 1 HEIHKD = {{ sellRate }} DAI</div>
+        <div
+          class="
+            d-block d-sm-flex
+            justify-content-between
+            align-items-center
+            mb-4
+          "
+        >
           <b-form-group class="w-100 mb-0">
             <b-input-group append="HEIHKD">
               <b-form-input
@@ -70,6 +81,7 @@
         <div class="text-center">
           <b-button
             v-if="!needsToApproveFromHeihkdToDai"
+            :disabled="!canSwapFromHeihkdToDai"
             variant="dark"
             block
             @click="swap('toDai')"
@@ -108,17 +120,26 @@ export default {
         this.fromHeihkd
       )
     },
-    exchangeRateFromDaiToHeihkd() {
-      return this.$store.state.heihkdToken.exchangeRateFromDaiToHeiHkd
+    canSwapFromDaiToHeihkd() {
+      return (
+        this.$store.getters['heihkdToken/heihkdBalanceFormatted'] >
+        this.toHeihkd
+      )
     },
-    exchangeRateFromHeihkdToDai() {
-      return this.$store.state.heihkdToken.exchangeRateFromHeihkdToDai
+    canSwapFromHeihkdToDai() {
+      return this.$store.getters['heihkdToken/daiBalanceFormatted'] > this.toDai
+    },
+    sellRate() {
+      return this.$store.state.heihkdToken.sellRate
+    },
+    buyRate() {
+      return this.$store.state.heihkdToken.buyRate
     },
     toHeihkd() {
-      return this.fromDai * this.exchangeRateFromDaiToHeihkd
+      return this.fromDai * this.buyRate
     },
     toDai() {
-      return this.fromHeihkd / this.exchangeRateFromHeihkdToDai
+      return this.fromHeihkd / this.sellRate
     },
   },
   methods: {
@@ -128,34 +149,34 @@ export default {
       const signer = await getSigner()
       const heihkdContractWithSigner = heihkdContract.connect(signer)
       const daiContractWithSigner = daiContract.connect(signer)
-
       try {
         switch (direction) {
           case 'toHeihkd':
             await daiContractWithSigner.approve(
-              process.env.heihkdContractAddress,
+              this.$config.heihkdContractAddress,
               parseEther(this.$store.getters['wallet/daiBalanceFormatted'])
             )
             break
           case 'toDai':
             await heihkdContractWithSigner.approve(
-              process.env.heihkdContractAddress,
+              this.$config.heihkdContractAddress,
               parseEther(this.$store.getters['wallet/heihkdBalanceFormatted'])
             )
             break
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error(e)
+      }
     },
     async swap(direction) {
       const heihkdContract = this.$store.state.heihkdToken.contract
       const signer = await getSigner()
       const heihkdContractWithSigner = heihkdContract.connect(signer)
-
       switch (direction) {
         case 'toHeihkd':
           try {
             await heihkdContractWithSigner.swapDaiForHeihkd(
-              parseEther(this.fromHeihkd.toString())
+              parseEther(this.fromDai.toString())
             )
           } catch (e) {
             console.error(e)
@@ -164,7 +185,7 @@ export default {
         case 'toDai':
           try {
             await heihkdContractWithSigner.swapHeihkdForDai(
-              parseEther(this.fromDai.toString())
+              parseEther(this.fromHeihkd.toString())
             )
           } catch (e) {
             console.error(e)
@@ -175,3 +196,15 @@ export default {
   },
 }
 </script>
+
+<style lang="scss">
+//.input-group input {
+//  background-color: #424242;
+//  color: #fff;
+//
+//  &[readonly] {
+//    background-color: #424242;
+//    color: #fff;
+//  }
+//}
+</style>

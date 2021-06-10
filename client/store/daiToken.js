@@ -16,15 +16,21 @@ export const actions = {
   async getContract({ commit, dispatch }) {
     const provider = await getProvider()
     const contract = new ethers.Contract(
-      process.env.daiContractAddress,
+      this.$config.daiContractAddress,
       DAIToken.abi,
       provider
     )
     commit('setContract', contract)
 
-    provider.on({ address: process.env.daiContractAddress }, async (e) => {
+    provider.on({ address: this.$config.daiContractAddress }, async (e) => {
       await dispatch('wallet/getBalances', null, { root: true })
       await dispatch('wallet/getAllowance', null, { root: true })
     })
+
+    // ToDo enhance this part
+    setInterval(async () => {
+      await dispatch('wallet/getAllowance', null, { root: true })
+      await dispatch('wallet/getBalances', null, { root: true })
+    }, 1000 * 5)
   },
 }

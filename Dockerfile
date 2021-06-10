@@ -1,13 +1,14 @@
-FROM node:14-alpine
+FROM node:14-alpine as base
 
 ENV HOST 0.0.0.0
 EXPOSE 3000
-CMD [ "yarn", "nuxt:start" ]
-WORKDIR /app/client
+CMD ["yarn", "nuxt:dev"]
+WORKDIR /app
+RUN apk update && \
+    apk add git
 
-COPY client/package.json src/yarn.lock /app/client/
+COPY ./package.json ./yarn.lock /app/
 RUN yarn
 
 ADD ./ /app/
-RUN cd /app/client && \
-    yarn nuxt:build
+RUN yarn nuxt:build

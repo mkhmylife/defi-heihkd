@@ -4,8 +4,8 @@ metadata:
     name: frontend-configmap
     namespace: heihkd
 data:
-  DAI_CONTRACT_ADDRESS: ""
-  HEIHKD_CONTRACT_ADDRESS: ""
+  DAI_CONTRACT_ADDRESS: "0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3"
+  HEIHKD_CONTRACT_ADDRESS: "0xf2a7E1Faf99a77bfD5F43D747F7c7449B9B2507A"
 ---
 apiVersion: apps/v1
 kind: Deployment

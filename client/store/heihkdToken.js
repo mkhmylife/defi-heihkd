@@ -7,13 +7,13 @@ export const state = () => ({
   owner: null,
   daiBalance: 0,
   heihkdBalance: 0,
-  exchangeRateFromDaiToHeiHkd: 0,
-  exchangeRateFromHeihkdToDai: 0,
+  buyRate: 0,
+  sellRate: 0,
 })
 
 export const getters = {
-  daiBalanceFormatted: (state) => formatEther(state.daiBalance),
-  heihkdBalanceFormatted: (state) => formatEther(state.heihkdBalance),
+  daiBalanceFormatted: (state) => parseFloat(formatEther(state.daiBalance)).toFixed(2),
+  heihkdBalanceFormatted: (state) => parseFloat(formatEther(state.heihkdBalance)).toFixed(2),
 }
 
 export const mutations = {
@@ -29,11 +29,11 @@ export const mutations = {
   setHeihkdBalance(state, balance) {
     state.heihkdBalance = balance
   },
-  setExchangeRateFromDaiToHeiHkd(state, rate) {
-    state.exchangeRateFromDaiToHeiHkd = rate / 1000
+  setBuyRate(state, rate) {
+    state.buyRate = rate / 100
   },
-  setExchangeRateFromHeihkdToDai(state, rate) {
-    state.exchangeRateFromHeihkdToDai = rate / 1000
+  setSellRate(state, rate) {
+    state.sellRate = rate / 100
   },
 }
 
@@ -41,38 +41,43 @@ export const actions = {
   async getContract({ commit, dispatch }) {
     const provider = await getProvider()
     const contract = new ethers.Contract(
-      process.env.heihkdContractAddress,
+      this.$config.heihkdContractAddress,
       HeiHKDToken.abi,
       provider
     )
     commit('setContract', contract)
+    window.contract = contract
 
-    const owner = await contract.getOwner()
+    const owner = await contract.owner()
     commit('setOwner', owner)
 
     await dispatch('getExchangeRate')
     await dispatch('getBalance')
 
-    provider.on({ address: process.env.heihkdContractAddress }, async () => {
+    provider.on({ address: this.$config.heihkdContractAddress }, async () => {
       await dispatch('heihkdToken/getBalance', null, { root: true })
       await dispatch('wallet/getBalances', null, { root: true })
       await dispatch('wallet/getAllowance', null, { root: true })
     })
+
+    // ToDo enhance this part
+    setInterval(async () => {
+      await dispatch('heihkdToken/getBalance', null, { root: true })
+    }, 1000 * 5)
   },
-  async getBalance({ commit, state, rootState }) {
-    const daiBalance = await rootState.daiToken.contract.balanceOf(state.owner)
+  async getBalance({ commit, state }) {
+    const daiBalance = await state.contract.daiBalance()
+    console.log(daiBalance.toString())
     commit('setDaiBalance', daiBalance)
     const heihkdBalance = await state.contract.balanceOf(
-      process.env.heihkdContractAddress
+      this.$config.heihkdContractAddress
     )
     commit('setHeihkdBalance', heihkdBalance)
   },
   async getExchangeRate({ commit, state }) {
-    const fromDaiToHeihkd =
-      await state.contract.getExchangeRateFromDaiToHeihkd()
-    const fromHeihkdToDai =
-      await state.contract.getExchangeRateFromHeihkdToDai()
-    commit('setExchangeRateFromDaiToHeiHkd', fromDaiToHeihkd)
-    commit('setExchangeRateFromHeihkdToDai', fromHeihkdToDai)
+    const fromDaiToHeihkd = await state.contract.getBuyRate()
+    const fromHeihkdToDai = await state.contract.getSellRate()
+    commit('setBuyRate', fromDaiToHeihkd)
+    commit('setSellRate', fromHeihkdToDai)
   },
 }
